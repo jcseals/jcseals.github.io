@@ -7,7 +7,7 @@ image: chaos-htb-walkthrough/chaos.png
 
 ## Background
 
-Chaos is a "vulnerable by design" machine from [hackthebox.eu][1]. In this walkthrough I perform the actions of an attacker. The goal is twofold, first, get user-level privileges on the box and get the key in /home/$USER/user.txt. Second, escalate privileges to root and get the flag at /root/root.txt. 
+Chaos is a "vulnerable by design" machine from [hackthebox.eu][1]. In this walkthrough I perform the actions of an attacker. The goal is twofold: first get user-level privileges on the box and get the key in /home/$USER/user.txt. Second, escalate privileges to root and get the flag at /root/root.txt. 
 
 ## Victim Machine Specs
 
@@ -16,7 +16,7 @@ Chaos is a "vulnerable by design" machine from [hackthebox.eu][1]. In this walkt
 ## Reconnaissance
 
 ```text
-$ nmap -sS -sV -A 10.10.10.120
+~/ctf/htb/chaos λ nmap -sS -sV -A 10.10.10.120
 ```
 
 ```
@@ -95,7 +95,7 @@ It's saying we need to hit that service over https, not http, so we try that ins
 
 We get a login prompt, but we have no credentials to try. We could potentially brute-force the login, but there's usually a better way. Let's save this for later and continue enumeration.
 
-Now that we know what services are open to us, we can look for pubically available exploits for these services and specific versions. The searchsploit tool queries [exploit-db.com][2] from the cli:
+Now that we know what services are open to us, we can look for publicly available exploits for these services and specific versions. The searchsploit tool queries [exploit-db.com][2] from the cli:
 
 ```text
 ~/ctf/htb/chaos λ searchsploit -t webmin
@@ -127,7 +127,7 @@ We get a lot back, but only one could potentially work for us, "Webmin 1.900 - R
 ~/ctf/htb/chaos λ searchsploit -x 46201
 ```
 
-Reading through the exploit notes, we do in fact see this affects lower versions. The exploit allows for remote command execution (RCE), but one must be authorized first. We may be able to use this later, but without credentials to the webmin login portal it won't do us much good. I looked for dovecot and apache exploits for the listed versions, but didn't find much either.
+Reading through the exploit notes, we do in fact see this affects lower versions. The exploit allows for remote command execution (RCE), but one must be authorized first. We may be able to use this later, but without credentials to the webmin login portal it won't do us much good. I looked for dovecot and apache exploits for the versions nmap returned, but didn't find anything to help us. 
 
 Since we didn't find anything on the homepages, let's use gobuster to spider the website and look for sub-directories:
 
@@ -233,7 +233,7 @@ Thanks,
 Ayush
 ```
 
-I cut the base64 encoded attachments that were also in the e-mail for the sake of space. The first attachment was a python script named "en.py" which looks to be an incomplete script that encrypts another file's contents and writes it to a new file. The second attachment contained what looked to be random / encrypted data. Mostly random data with an integer near where the magic bytes should be. 
+I removed the base64 encoded attachments from the snippet above that were also in the e-mail for the sake of space. The first attachment was a python script named "en.py" which looks to be an incomplete script that encrypts another file's contents and writes it to a new file. The second attachment contained what looked to be random / encrypted data. Mostly random data with an integer near where the magic bytes should be. 
 
 Here's the incomplete python script we found in the e-mail:
 
