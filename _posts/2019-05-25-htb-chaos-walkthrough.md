@@ -2,6 +2,7 @@
 layout: post
 author: jseals
 title: "Chaos: Hack The Box Walkthrough"
+image: chaos-htb-walkthrough/chaos.png
 ---
 
 ## Background
