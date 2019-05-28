@@ -11,8 +11,7 @@ Chaos is a "vulnerable by design" machine from [hackthebox.eu][1]. In this walkt
 
 ## Victim Machine Specs
 
-1. OS - Linux
-2. IP - 10.10.10.120
+![chaos.png](/assets/images/posts/chaos-htb-walkthrough/chaos.png)
 
 ## Reconnaissance
 
