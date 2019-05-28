@@ -15,7 +15,7 @@ Chaos is a "vulnerable by design" machine from [hackthebox.eu][1]. In this walkt
 
 ## Reconnaissance
 
-```bash
+```text
 $ nmap -sS -sV -A 10.10.10.120
 ```
 
