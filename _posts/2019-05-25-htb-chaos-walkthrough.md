@@ -168,7 +168,7 @@ read R BLOCK
 a001 LOGIN ayush jiujitsu
 ```
 
-The credentials work, we get a "OK" and "Logged in" message from the server:
+The credentials work, we get an "OK" and "Logged in" message from the server:
 
 ```text
 * OK [CAPABILITY IMAP4rev1 SASL-IR LOGIN-REFERRALS ID ENABLE IDLE LITERAL+ AUTH=PLAIN] Dovecot (Ubuntu)
@@ -331,7 +331,7 @@ passw = getKey('sahay')
 decrypt('enim_msg.txt', passw)
 ```
 
-I didn't bother to ignore the first 32 bytes that contained filesize + IV data, but I could have as this wasn't originally encrypted. Once our decryption method runs, we output a new file:
+Once our decryption method runs, we output a new file excluding the first 32 bytes (as they weren't originally encrypted):
 
 ```text
 SGlpIFNhaGF5CgpQbGVhc2UgY2hlY2sgb3VyIG5ldyBzZXJ2aWNlIHdoaWNoIGNyZWF0ZSBwZGYKCnAucyAtIEFzIHlvdSB0b2xkIG
