@@ -1,17 +1,17 @@
 ---
 layout: post
 author: jseals
-title: "Chaos: Hack The Box Walkthrough"
-image: chaos-htb-walkthrough/chaos.png
+title: "Chaos: Hack The Box Walk-through"
+image: htb-chaos/chaos.png
 ---
 
 ## Background
 
-Chaos is a "vulnerable by design" machine from [hackthebox.eu][1]. In this walkthrough I perform the actions of an attacker. The goal is twofold: first get user-level privileges on the box and get the key in /home/$USER/user.txt. Second, escalate privileges to root and get the flag at /root/root.txt. 
+Chaos is a "vulnerable by design" machine from [hackthebox.eu][1]. In this walk-through I perform the actions of an attacker. The goal is twofold: first get user-level privileges on the box and get the key in /home/$USER/user.txt. Second, escalate privileges to root and get the flag at /root/root.txt.
 
 ## Victim Machine Specs
 
-![chaos.png](/assets/images/posts/chaos-htb-walkthrough/chaos.png)
+![chaos.png](/assets/images/posts/htb-chaos/chaos.png)
 
 ## Reconnaissance
 
@@ -83,15 +83,15 @@ From this output we gather there is an Apache webserver with version 2.4.34, and
 
 At this point we may as well try and browse the web servers on port 80 and 10000 to see if we get any hints. We go to port 80 in our browser and are greeted with this:
 
-![chaos-1304.png](/assets/images/posts/chaos-htb-walkthrough/chaos-1304.png)
+![chaos-1304.png](/assets/images/posts/htb-chaos/chaos-1304.png)
 
 Not much there, let's try the MiniServ webmin service on port 10000:
 
-![chaos-3823.png](/assets/images/posts/chaos-htb-walkthrough/chaos-3823.png)
+![chaos-3823.png](/assets/images/posts/htb-chaos/chaos-3823.png)
 
 It's saying we need to hit that service over https, not http, so we try that instead:
 
-![chaos-3918.png](/assets/images/posts/chaos-htb-walkthrough/chaos-3918.png)
+![chaos-3918.png](/assets/images/posts/htb-chaos/chaos-3918.png)
 
 We get a login prompt, but we have no credentials to try. We could potentially brute-force the login, but there's usually a better way. Let's save this for later and continue enumeration.
 
@@ -137,15 +137,15 @@ Since we didn't find anything on the homepages, let's use gobuster to spider the
 
 Among other directories, gobuster returns a /wp directory. Let's checkout their wordpress website, browsing to http://10.10.10.120/wp takes us to a directory listing with a 'wordpress' directory. Clicking that takes us to the wordpress site this server is hosting:
 
-![chaos-5647.png](/assets/images/posts/chaos-htb-walkthrough/chaos-5647.png)
+![chaos-5647.png](/assets/images/posts/htb-chaos/chaos-5647.png)
 
 A password protected blog post... Not many hints to go off of and I had difficultly using hydra to bruteforce this POST form. I clicked around the website, and ended up clicking the "Protected: chaos" link under the recent posts title and got a slightly different page:
 
-![chaos-5417.png](/assets/images/posts/chaos-htb-walkthrough/chaos-5417.png)
+![chaos-5417.png](/assets/images/posts/htb-chaos/chaos-5417.png)
 
 There is a slight change, it includes the author, "BY HUMAN". Thinking this may be a clue, I tried 'human' as the password and it worked. The hidden post now reveals itself to be some webmail credentials I'm sure will be used later in the exercise:
 
-![chaos-5435.png](/assets/images/posts/chaos-htb-walkthrough/chaos-5435.png)
+![chaos-5435.png](/assets/images/posts/htb-chaos/chaos-5435.png)
 
 Remember back to our nmap scan results, there were IMAP and POP3 services running. Maybe these credentials will work there, so we try the IMAP encrypted port first using openssl:
 
@@ -356,7 +356,7 @@ Ayush
 
 Okay! So under one layer of encryption and one layer of encoding we finally get to a clear text message that gives us a path foward. A new link. Let's try going there in the web browser after adding an entry in our /etc/hosts file for chaos.htb to point to 10.10.10.120. We're greeted with a new page:
 
-![chaos-4941.png](/assets/images/posts/chaos-htb-walkthrough/chaos-4941.png)
+![chaos-4941.png](/assets/images/posts/htb-chaos/chaos-4941.png)
 
 Some type of pdf making service... Okay. Let's put a shell command in the text field, pick one of the three templates (template 2 and 3 work, 1 doesn't), and test it out. Before we do that though, we can start burpsuite to proxy all of our web requests. One of the many things burp allows us to do is edit and manipulate fields before the request is sent to the server. This makes it easy to send whatever data we want to this service.
 
