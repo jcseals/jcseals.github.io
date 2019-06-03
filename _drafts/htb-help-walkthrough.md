@@ -129,7 +129,7 @@ File Type: troff or preprocessor input, ASCII text, with CRLF line terminators
 Copied to: ~/ctf/htb/help/40300.py
 ```
 
-It's not wise to blindly execute code downloaded from the internet on your machine, especially exploit code for a number of reasons. First, we should read the code and ensure it's not doing anything harmful to our system. Second, it also gives us the ability to see if we need to make minor adjustments to the code for it to work in our environment or with the victim's environment. Finally, it gives us an opportunity to learn how the exploit actually works.
+It's not wise to blindly execute code downloaded from the internet on your machine, especially exploit code for a number of reasons. First, we should read the code and ensure it's not doing anything harmful to our system. Second, it gives us the ability to see if we need to make minor adjustments to the code for it to work in our environment or with the victim's environment. Finally, it gives us an opportunity to learn how the exploit actually works.
 
 Below is an edited version of the exploit code with almost all of the original author's comments removed for brevity (I needed to alter the "Date" key in the headers dict and change the strptime formatters):
 
@@ -168,11 +168,11 @@ for x in range(0, 300):
 print 'Sorry, I did not find anything'
 ```
 
-Just under the imports in the code above I left the most important comment. That's the HelpDeskZ php code used to rename files once they're uploaded. This logic is easily predictable and repeatable which gets us one step closer to taking advantage of a LFI vulnerability. It simply appends the return value of the php time function to the filename as a string, creates and md5 hash of that concatenated string, and appends the original file extension to the created hash.
+Just under the imports in the code above I left the most important comment. That's the HelpDeskZ php code used to rename files once they're uploaded. This logic is easily predictable and repeatable which gets us one step closer to taking advantage of a LFI vulnerability. It simply appends the return value of the php time function to the filename as a string, creates a md5 hash of that concatenated string, and appends the original file extension to the created hash.
 
 I won't explain the code line by line but we'll cover it at a high level. The exploit code above takes advantage of the predictable file naming logic and attempts to create the same filename as the server did when we uploaded our file. Since we've reviewed the logic, we know that we just need the server's system time, the filename, and the file's extension. Since we're uploading the file, all we're missing is the server's time.
 
-The code obtains the server's time by making a HTTP GET request and parsing the "Date" value out of the server's response header. The code then enters a for loop where each iteration crafts the filename and appends it to the HelpDeskZ base URL and makes an HTTP request for the file. If it doesn't find it, the next loop iteration subtracts a second from the sever time and tries again. Essentially, the code will find our file as long as we've uploaded it within the last 5 minutes as the code loops 300 times (each loop goes back one second further up to 5 minutes total).
+The code obtains the server's time by making a HTTP GET request and parsing the "Date" value out of the server's response header. The code then enters a for loop where each iteration crafts the filename and appends it to the HelpDeskZ base URL and makes an HTTP request for the file. If it doesn't find it, the next loop iteration subtracts a second from the sever time and tries again. Essentially, the code will find our file as long as we've uploaded it within the last 5 minutes as the code loops 300 times (each loop goes back one second further and up to 5 minutes total).
 
 This is great. We can locate files we upload, now we just need to find a way to bypass the filetype restrictions to get our php shell uploaded.
 
@@ -325,7 +325,7 @@ rOOTmEoRdIE
 su
 ```
 
-We see two su commands followed by what looks like a password to me "rOOTmEoRdIE"... Was it that easy? Looks like the user accidentally typed his password on the command prompt instead of into the su password prompt. Let's try it:
+We see two su commands followed by what looks like a password to me "rOOTmEoRdIE"... Was it that easy? Looks like the user accidentally typed his password on the command prompt instead of into the su password prompt which wouldn't have included it in the bash_history. Let's try it:
 
 ```text
 help@help:/home/help$ su
