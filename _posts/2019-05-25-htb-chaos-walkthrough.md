@@ -7,7 +7,7 @@ image: htb-chaos/chaos.png
 
 ## Background
 
-Chaos is a "vulnerable by design" machine from [hackthebox.eu][1]. In this walk-through I perform the actions of an attacker. The goal is twofold: first get user-level privileges on the box and get the key in /home/$USER/user.txt. Second, escalate privileges to root and get the flag at /root/root.txt.
+Chaos is a retired "vulnerable by design" machine created by [felamos][1] and hosted at [hackthebox.eu][2]. In this walk-through I perform the actions of an attacker. The goals are to get user-level privileges on the victim machine (get the flag in /home/$USER/user.txt) and escalate privileges to root (get the flag in /root/root.txt).
 
 ## Victim Machine Specs
 
@@ -95,7 +95,7 @@ It's saying we need to hit that service over https, not http, so we try that ins
 
 We get a login prompt, but we have no credentials to try. We could potentially brute-force the login, but there's usually a better way. Let's save this for later and continue enumeration.
 
-Now that we know what services are open to us, we can look for publicly available exploits for these services and specific versions. The searchsploit tool queries [exploit-db.com][2] from the cli:
+Now that we know what services are open to us, we can look for publicly available exploits for these services and specific versions. The searchsploit tool queries [exploit-db.com][3] from the cli:
 
 ```text
 ~/ctf/htb/chaos λ searchsploit -t webmin
@@ -546,7 +546,7 @@ cat logins.json
 
 Looking at the logins.json file contents. We see a username / password is saved for this machine we're attacking with port 10000. If we remember back to our port scan, we found webmin running on port 10000. We also found an exploit that allows RCE as root if we are authenticated to webmin. Looks like we're close to the second flag.
 
-Back to the mozilla credentials, they're encrypted. Firefox has the ability to use a master password to encrypt the passwords stored on disk to make our life as an attacker a little more difficult. There's a python script that can decrypt these for us called [firefox_decrypt.py][3]. We just need to pass the script the master password. The first thing we try are the webmail credentials as ayush has proven he reuses passwords, and it works:
+Back to the mozilla credentials, they're encrypted. Firefox has the ability to use a master password to encrypt the passwords stored on disk to make our life as an attacker a little more difficult. There's a python script that can decrypt these for us called [firefox_decrypt.py][4]. We just need to pass the script the master password. The first thing we try are the webmail credentials as ayush has proven he reuses passwords, and it works:
 
 ```text
 ~/ctf/htb/chaos λ python ../../code/firefox_decrypt/firefox_decrypt.py mozilla/firefox/bzo7sjt1.default 
@@ -626,6 +626,7 @@ cat /root/root.txt
 4eca7e09{truncated} <-------- Flag #2, we have root and complete control of the system
 ```
 
-[1]: https://www.hackthebox.eu
-[2]: https://www.exploit-db.com
-[3]: https://github.com/Unode/firefox_decrypt
+[1]: https://www.hackthebox.eu/home/users/profile/27390
+[2]: https://www.hackthebox.eu
+[3]: https://www.exploit-db.com
+[4]: https://github.com/Unode/firefox_decrypt

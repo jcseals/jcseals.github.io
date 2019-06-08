@@ -7,7 +7,7 @@ image: htb-help/help.png
 
 ## Background
 
-Help is a "vulnerable by design" machine from [hackthebox.eu][1]. In this walk-through I perform the actions of an attacker. The goal is twofold: first get user-level privileges on the box and get the key in /home/$USER/user.txt. Second, escalate privileges to root and get the flag at /root/root.txt.
+Help is a retired "vulnerable by design" machine created by [cymtrick][1] and hosted at [hackthebox.eu][2]. In this walk-through I perform the actions of an attacker. The goals are to get user-level privileges on the victim machine (get the flag in /home/$USER/user.txt) and escalate privileges to root (get the flag in /root/root.txt).
 
 ## Victim Machine Specs
 ![help.png](/assets/images/posts/htb-help/help.png)
@@ -111,7 +111,7 @@ HelpDeskZ 1.0.2 - Arbitrary File Upload                                        |
 HelpDeskZ < 1.0.2 - (Authenticated) SQL Injection / Unauthorized File Download | exploits/php/webapps/41200.py
 ```
 
-Interesting! While we haven't confirmed our version of HelpDeskZ yet, it's nice to have potential exploits that could help us. We see that exploit 41200 requires authentication, and since we don't have login credentials yet we can examine 40300 first. Reading through the exploit, the author tells us that the HelpDeskZ software has a weakness in the file renaming function of the uploaded file when creating a ticket (the same process we just tried before). He then references the [HelpDeskZ code repository][2] on github.com.
+Interesting! While we haven't confirmed our version of HelpDeskZ yet, it's nice to have potential exploits that could help us. We see that exploit 41200 requires authentication, and since we don't have login credentials yet we can examine 40300 first. Reading through the exploit, the author tells us that the HelpDeskZ software has a weakness in the file renaming function of the uploaded file when creating a ticket (the same process we just performed). He then references the HelpDeskZ code repository on [github.com][3].
 
 More good news for us. Not only is this exploit looking incredibly useful to us, but the HelpDeskZ software is open-sourced and available on github. This allows us to look through it if needed to find more vulnerabilities or understand our target better.
 
@@ -168,15 +168,11 @@ for x in range(0, 300):
 print 'Sorry, I did not find anything'
 ```
 
-Just under the imports in the code above I left the most important comment. That's the HelpDeskZ php code used to rename files once they're uploaded. This logic is easily predictable and repeatable which gets us one step closer to taking advantage of a LFI vulnerability. It simply appends the return value of the php time function to the filename as a string, creates a md5 hash of that concatenated string, and appends the original file extension to the created hash.
+Just under the imports in the code above is the HelpDeskZ php code used to rename files once they're uploaded. This logic is easily repeatable which gets us one step closer to taking advantage of a LFI vulnerability. It simply appends the return value of the php time function to the filename as a string, creates a md5 hash of that concatenated string, and appends the original file extension to the created hash.
 
-I won't explain the code line by line but we'll cover it at a high level. The exploit code above takes advantage of the predictable file naming logic and attempts to create the same filename as the server did when we uploaded our file. Since we've reviewed the logic, we know that we just need the server's system time, the filename, and the file's extension. Since we're uploading the file, all we're missing is the server's time.
+The code above first obtains the server's datetime by parsing the "Date" value in the response header of our HTTP request. Next, it mimics the file naming logic in a for loop 300 times; each time subtracting a second from the server's datetime before making the HTTP request for that crafted filename / URL. This means as long as we run this code within 5 minutes of uploading a file, it will find our file's path on the server.
 
-The code obtains the server's time by making a HTTP GET request and parsing the "Date" value out of the server's response header. The code then enters a for loop where each iteration crafts the filename and appends it to the HelpDeskZ base URL and makes an HTTP request for the file. If it doesn't find it, the next loop iteration subtracts a second from the sever time and tries again. Essentially, the code will find our file as long as we've uploaded it within the last 5 minutes as the code loops 300 times (each loop goes back one second further and up to 5 minutes total).
-
-This is great. We can locate files we upload, now we just need to find a way to bypass the filetype restrictions to get our php shell uploaded.
-
-There are a number of ways for websites to restrict filetype access, but since this code is available on github, let's just look at the implementation for ourselves. We start at [submit_ticket_controller.php][2] because we know that's where the file naming logic was handled. Also, we searched for the error message we received when uploading our php shell which was "File is not allowed.". This was assigned to a constant named "FILE_NOT_ALLOWED". Searching for that constant variable also takes us to the following if condition:
+Now all we need to do is bypass that pesky file extension whitelist / blacklist and upload our php shell. Below is a snippet of code from [submit_ticket_controller.php][3] which is responsible for the file upload blocking logic:
 
 ```php
 if(!isset($error_msg) && $settings['ticket_attachment']==1){
@@ -210,9 +206,9 @@ if(!isset($error_msg) && $settings['ticket_attachment']==1){
  }
 ```
 
-This block of code tells us a lot. We see there is a "ticket_attachment" array value referenced, so it's safe to assume we're in the right place. We then see a variable named "uploaddir". This is created by concatenating the "UPLOAD_DIR" constant with "tickets/". This ends up being "/uploads/tickets/" and is the exact directory on the server our uploaded files are stored. We'll need to add this to our base URL when we run the exploit to find our file.
+We see there is a "ticket_attachment" array value referenced, so it's safe to assume we're in the right place. We then see a variable named "uploaddir". This is created by concatenating the "UPLOAD_DIR" constant with "tickets/". This ends up being "/uploads/tickets/" and is the exact directory on the server our uploaded files are stored. We'll need to add this to our base URL when we run the exploit to find our file.
 
-Further down we see a function named "verifyAttachment" whose return value is assigned to "fileverification" which is used as the conditional statement in the switch-case that throws our "File is not allowed." error. We're getting warmer... Let's back up though, "verifyAttachment" is only called in the else block. To trace the code flow backwards, let's look at why we're failing the if condition in the first place. The if statement conditional is true if the function "move_uploaded_file" returns false. The obvious next step is to look up that function in the [php docs][3].
+Further down we see a function named "verifyAttachment" whose return value is assigned to "fileverification" which is used as the conditional statement in the switch-case that throws our "File is not allowed." error. We're getting warmer... Let's back up though, "verifyAttachment" is only called in the else block. To trace the code flow backwards, let's look at why we're failing the if condition in the first place. The if statement conditional is true if the function "move_uploaded_file" returns false. The obvious next step is to look up that function in the [php docs][4].
 
 Here's the function definition:
 
@@ -308,7 +304,7 @@ drwxrwxrwx   6 root root 4.0K Jan 11 05:53 help
 -rw-r--r--   1 root root   33 Nov 28  2018 user.txt
 ```
 
-This tells us a good amount. First, the user had sudo access at some point as the ".sudo_as_admin_successful" is present. Second, the bash_history is being saved. Being able to see the user's bash history can often times tell you a lot about your environment or potential vectors for future attacks. Let's look at it (I'll only display the first 10 lines as that contains our next step):
+The ".sudo_as_admin_successful" file tells us the user had sudo access at some point. We also see the user's bash history file ".bash_history" is present. Let's look at it:
 
 ```text
 help@help:/home/help$ head .bash_history
@@ -370,6 +366,7 @@ cat /root/root.txt
 b7fe6082dc{truncated} <--- We have root and the second objective, the root flag.
 ```
 
-[1]: https://www.hackthebox.eu
-[2]: https://github.com/evolutionscript/HelpDeskZ-1.0/blob/master/controllers/submit_ticket_controller.php
-[3]: https://www.php.net/manual/en/function.move-uploaded-file.php
+[1]: https://www.hackthebox.eu/home/users/profile/3079
+[2]: https://www.hackthebox.eu
+[3]: https://github.com/evolutionscript/HelpDeskZ-1.0/blob/master/controllers/submit_ticket_controller.php
+[4]: https://www.php.net/manual/en/function.move-uploaded-file.php
