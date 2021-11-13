@@ -184,7 +184,6 @@ $ jar -cvf ../webshell.war *
 ```
 
 Now to deploy it. Using the same path altering method as before, we upload the war file via the tomcat manager page and the upload succeeds.
-![Screenshot_url_bypass.png](/assets/images/posts/htb-seal/Screenshot_url_bypass.png)
 
 We can now access our webshell and run commands. To make running commands easier, let's access it through burp:
 
