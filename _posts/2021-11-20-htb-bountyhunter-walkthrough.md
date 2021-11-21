@@ -309,7 +309,7 @@ Destination: pwntown
 e2c32dfa78e8b578d628c---truncated
 ```
 
-We retrieve the root flag which proves root access. The wraps up this machine.
+We retrieve the root flag which proves root access. That wraps up this machine.
 
 [1]: https://app.hackthebox.com/users/280547
 [2]: https://www.hackthebox.eu
