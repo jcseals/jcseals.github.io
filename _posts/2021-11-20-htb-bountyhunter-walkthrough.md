@@ -263,7 +263,8 @@ The first thing that stands out is the eval. That combined with the fact we can 
 2. The first line must be "# Skytrain Inc"
 3. The second line must be "## Ticket to 'anything here'"
 4. The third line must be " _ _Ticket Code:_ _"
-5. Lastly, the fourth line must start with "**", and then followed by a number greater than 100 and also has a modulo of 4 when divided by 7.
+5. Our magic number must be followed by a "+" sign as the code splits on that and takes the 0th index
+6. Lastly, the fourth line must start with "**", and then followed by a number greater than 100 and also has a modulo of 4 when divided by 7.
 
 Simple code to generate valid numbers:
 ```python
@@ -272,7 +273,7 @@ In [1]: for x in range(101,1001):
    ...:         print(x)
 ```
 
-It gives us many, let's pick 186 as our number. There's one last trick, since we are executing inside an eval function, we must perform some simple calculation with our magic number first, then we can use the and condition to execute the python of our choosing (as the root user with sudo).
+It gives us many, let's pick 186 as our number. There's one last trick, since we are executing inside an eval function, we must perform some simple expressions with our magic number first, then we can use the and operator to execute the python of our choosing (as the root user with sudo).
 
 Given all this, here's our crafted ticket payload to test:
 ```text
@@ -283,7 +284,7 @@ __Ticket Code:__
 **186+1==187 and __import__('os').system('whoami') == True
 ```
 
-We hit all the requirements and our magic number and whoami commands are evaluated as conditions which is required since we're inside eval(). Let's run the ticketValidator.py with sudo and pass in our ticket:
+We hit all the requirements and our magic number and whoami command expressions are evaluated which is required since we're inside eval(). Let's run the ticketValidator.py with sudo and pass in our ticket:
 ```text
 development@bountyhunter:/opt/skytrain_inc$ sudo /usr/bin/python3.8 /opt/skytrain_inc/ticketValidator.py
 Please enter the path to the ticket file.
